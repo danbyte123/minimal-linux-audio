@@ -1,3 +1,4 @@
+ <div align="center">
 ```
  ███╗   ███╗██╗      █████╗ 
  ████╗ ████║██║     ██╔══██╗
@@ -5,8 +6,10 @@
  ██║╚██╔╝██║██║     ██╔══██║
  ██║ ╚═╝ ██║███████╗██║  ██║
  ╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝
-  minimal · linux · audio
+   minimal · linux · audio
 ```
+
+</div>
 
 > A bare-bones Linux system built from scratch that boots in QEMU and plays audio.  
 > No distro. No package manager. Just a custom kernel, a hand-crafted initramfs, and BusyBox.
