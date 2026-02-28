@@ -1,8 +1,15 @@
-# 🔊 minimal-linux-audio
+```
+ ███╗   ███╗██╗      █████╗ 
+ ████╗ ████║██║     ██╔══██╗
+ ██╔████╔██║██║     ███████║
+ ██║╚██╔╝██║██║     ██╔══██║
+ ██║ ╚═╝ ██║███████╗██║  ██║
+ ╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝
+  minimal · linux · audio
+```
 
-A minimal Linux system built from scratch that boots in QEMU and plays audio. No distro, no package manager — just a custom kernel, a hand-crafted initramfs, and BusyBox.
-
-This project started as a challenge: *can you get audio working in a bare-bones Linux environment from scratch?* The answer is yes — but it takes patience.
+> A bare-bones Linux system built from scratch that boots in QEMU and plays audio.  
+> No distro. No package manager. Just a custom kernel, a hand-crafted initramfs, and BusyBox.
 
 ---
 
@@ -17,13 +24,20 @@ This project started as a challenge: *can you get audio working in a bare-bones 
 
 ## Requirements
 
-- A Linux host (tested on Debian/Ubuntu with PipeWire)
-- `qemu-system-x86_64`
-- `gcc`, `make`, `bc`, `flex`, `bison`, `libelf-dev` (for kernel build)
-- `cpio`, `gzip` (for initramfs)
+### Tools I Used on Debian
 
 ```bash
-sudo apt install qemu-system-x86 gcc make bc flex bison libelf-dev cpio gzip
+# QEMU - to run the kernel
+sudo apt install qemu-system-x86
+
+# Compiler + essentials
+sudo apt install gcc manpages-dev vim git make
+
+# Kernel build dependencies
+sudo apt install bzip2 libncurses-dev flex bison bc cpio libelf-dev libssl-dev syslinux dosfstools
+
+# Debugging tools (optional but useful)
+sudo apt install strace ltrace xtrace
 ```
 
 ---
@@ -103,7 +117,7 @@ cd fs/
 find . | cpio -o -H newc | gzip > ../init.cpio
 ```
 
-Or just use the build script:
+Or use the build script:
 
 ```bash
 chmod +x build.sh
@@ -135,34 +149,29 @@ qemu-system-x86_64 \
 Once booted at the `~ #` prompt:
 
 ```bash
-# Play a WAV file
-aplay -B 500000 /your_file.wav
-
-# Test audio with a tone
-speaker-test -t sine -f 440
-
-# Check volume
-amixer
+aplay -B 500000 /your_file.wav   # play audio
+speaker-test -t sine -f 440      # test with a tone
+amixer                           # check volume
 ```
 
-> **Audio backend:** The build script auto-detects PipeWire / PulseAudio / ALSA. If launching manually, replace `pipewire` with `pa` (PulseAudio) or `alsa` accordingly.
+> **Audio backend:** replace `pipewire` with `pa` (PulseAudio) or `alsa` depending on your host.
 
 ---
 
 ## The Hard-Won Lessons
 
-This took several hours of debugging. Here's what actually matters so you don't repeat the same pain:
+This took several hours of debugging. Here's what actually matters:
 
-### ⚠️ #1 — The most critical fix: ALSA config files
+### ⚠️ #1 — Missing ALSA config files (the main culprit)
 
-The single biggest blocker was missing `/usr/share/alsa/alsa.conf` inside the initramfs. Without it, `libasound` cannot resolve *any* PCM device names — not even `hw:0`. The error looks like this:
+Without `/usr/share/alsa/alsa.conf` in the initramfs, `libasound` can't resolve any PCM device — not even `hw:0`. You'll see:
 
 ```
 ALSA lib pcm.c:2722:(snd_pcm_open_noupdate) Unknown PCM hw:0
 aplay: main:850: audio open error: No such file or directory
 ```
 
-This is deeply confusing because `amixer` still works (it uses the control interface, not PCM), making it look like the hardware is fine but aplay is broken. The fix is simply:
+The confusing part: `amixer` still works because it uses the control interface, not PCM. Fix:
 
 ```bash
 mkdir -p fs/usr/share/alsa
@@ -171,21 +180,19 @@ cp -r /usr/share/alsa/cards     fs/usr/share/alsa/
 cp -r /usr/share/alsa/pcm       fs/usr/share/alsa/
 ```
 
-### ⚠️ #2 — Match the QEMU audio backend to your host
+### ⚠️ #2 — Match QEMU audio backend to your host
 
-| Host audio system | QEMU flag |
-|-------------------|-----------|
+| Host | QEMU flag |
+|------|-----------|
 | PipeWire | `-audiodev pipewire,id=snd0` |
 | PulseAudio | `-audiodev pa,id=snd0` |
 | Plain ALSA | `-audiodev alsa,id=snd0` |
 
-Using the wrong backend means QEMU silently drops all audio with no error.
-
 ### ⚠️ #3 — Always wire the audiodev explicitly
 
 ```bash
--device hda-duplex,audiodev=snd0   ✅ correct
--device hda-duplex                  ❌ audio silently dropped
+-device hda-duplex,audiodev=snd0   ✅
+-device hda-duplex                  ❌ (audio silently dropped)
 ```
 
 ### ℹ️ #4 — Underruns are normal in QEMU
@@ -194,25 +201,21 @@ Using the wrong backend means QEMU silently drops all audio with no error.
 underrun!!! (at least 23.589 ms long)
 ```
 
-This is QEMU struggling to feed audio data fast enough — not a real error. Use a larger buffer to reduce them:
-
-```bash
-aplay -B 500000 /your_file.wav
-```
+Use `-B 500000` for a larger buffer to reduce them.
 
 ---
 
 ## Known Issues
 
-- The initramfs is **32-bit (i386/musl)** — you cannot copy ALSA binaries directly from a 64-bit host, they must be cross-compiled or sourced from a 32-bit environment
-- `aplay` crashes with an assertion error at the very end of a file — this is a PipeWire timing quirk, the audio plays fine
-- No MP3 support — convert first with `ffmpeg -i input.mp3 output.wav` on your host
+- Initramfs is **32-bit (i386/musl)** — binaries can't be copied directly from a 64-bit host
+- `aplay` crashes with an assertion at end of file — PipeWire timing quirk, audio plays fine
+- No MP3 support — convert first: `ffmpeg -i input.mp3 output.wav`
 
 ---
 
 ## Credits
 
-- Inspired by this tutorial: [How to Build a Minimal Linux System](https://www.youtube.com/watch?v=vPU1j8aCD-w&t=640s)
+- Inspired by: [How to Build a Minimal Linux System](https://www.youtube.com/watch?v=vPU1j8aCD-w&t=640s)
 - Linux kernel: [kernel.org](https://kernel.org)
 - ALSA project: [alsa-project.org](https://www.alsa-project.org)
 
