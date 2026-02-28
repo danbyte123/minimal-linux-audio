@@ -1,0 +1,23 @@
+#!/bin/sh
+
+# Create mount points first
+/bin/busybox mkdir -p /proc /sys /dev
+
+# Mount essential filesystems
+/bin/busybox mount -t proc none /proc
+/bin/busybox mount -t sysfs none /sys
+/bin/busybox mount -t devtmpfs none /dev
+
+# Set volume if amixer exists
+if command -v amixer >/dev/null 2>&1; then
+    amixer set Master 100% unmute 2>/dev/null
+fi
+
+echo "================================"
+echo "Welcome to minimal Linux with Audio!"
+echo "================================"
+echo "Type 'exit' to shut down"
+echo ""
+
+# Start a shell
+exec /bin/sh
