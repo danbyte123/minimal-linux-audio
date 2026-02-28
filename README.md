@@ -10,8 +10,8 @@
 ```
  
 
-> A bare-bones Linux system built from scratch that boots in QEMU and plays audio.  
-> No distro. No package manager. Just a custom kernel, a hand-crafted initramfs, and BusyBox.
+> Linux system built from scratch that boots in QEMU and plays audio.  
+ 
 
 ---
 
@@ -132,7 +132,7 @@ chmod +x build.sh
 
 ```bash
 chmod +x build.sh
-./build.sh        # auto-detects your audio backend and launches QEMU
+./build.sh        
 ```
 
 Or manually:
@@ -160,11 +160,11 @@ amixer                           # check volume
 
 ---
 
-## The Hard-Won Lessons
+ 
 
 This took several hours of debugging. Here's what actually matters:
 
-### ⚠️ #1 — Missing ALSA config files (the main culprit)
+##1 — Missing ALSA config files (the main culprit)
 
 Without `/usr/share/alsa/alsa.conf` in the initramfs, `libasound` can't resolve any PCM device — not even `hw:0`. You'll see:
 
@@ -182,7 +182,7 @@ cp -r /usr/share/alsa/cards     fs/usr/share/alsa/
 cp -r /usr/share/alsa/pcm       fs/usr/share/alsa/
 ```
 
-### ⚠️ #2 — Match QEMU audio backend to your host
+##2 — Match QEMU audio backend to your host
 
 | Host | QEMU flag |
 |------|-----------|
@@ -223,10 +223,6 @@ Use `-B 500000` for a larger buffer to reduce them.
 
 ---
 
-## License
-
-MIT — do whatever you want with it.
-
----
-
-*Built from scratch. Debugged with patience. It works.*
+ 
+ 
+ 
