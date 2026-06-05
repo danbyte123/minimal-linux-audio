@@ -6,3 +6,4 @@
 		/etc/init.d/acpid --quiet --ifstarted restart || true
 	endscript
 }
+//dan
