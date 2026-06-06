@@ -6,7 +6,7 @@ dev_capture="default"
 
 bin="alsabat"
 commands="$bin -P $dev_playback -C $dev_capture"
-//ccccccc
+//ccccccc//cjfjdjfjff
 file_sin_mono="default_mono.wav"
 file_sin_dual="default_dual.wav"
 logdir="tmp"
